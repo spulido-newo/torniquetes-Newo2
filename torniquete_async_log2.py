@@ -22,7 +22,7 @@ logging.basicConfig(
 # Configuraciones
 PIN = 3
 SEDE = "Del Este"
-API_URL = "http://127.0.0.1:8000"  # URL base de la API de manejo del relay
+API_URL = "http://127.0.0.1:4000"  # URL base de la API de manejo del relay
 TORNIQUETE = "1"
 FUNCION = "Entrada"
 ID_SEDE_SISTEMA = "e74bb372-cd8e-4344-a0f7-a93c743ceaae"
@@ -69,7 +69,7 @@ async def procesar_codigo_qr(codigo):
 
         # Procesar el código QR desencriptado
         partes = codigo_desencriptado.split(',')
-        if len(partes) != 6:
+        if len(partes) != 7:
             raise ValueError("Formato de código QR incorrecto")
 
         tipo = partes[0].strip()
@@ -129,9 +129,9 @@ async def procesar_codigo_qr(codigo):
         elif tipo == "6":
             logging.debug("Agregando transacción tipo 6 a la cola")
             await transaction_queue.put(("transaccion6", id_miembro, id_sede, id_invitacion))
-        # elif tipo in ["2", "4", "6"]:
-        #     logging.debug(f"Procesando transacción tipo {tipo}")
-        #     ventana.after(0, lambda: lbl_mensaje.config(text="Regresa pronto...", fg="green", font=("Arial", 38)))
+        elif tipo in ["2", "4", "6"]:
+            logging.debug(f"Procesando transacción tipo {tipo}")
+            ventana.after(0, lambda: lbl_mensaje.config(text="Regresa pronto...", fg="green", font=("Arial", 38)))
 
         # Programar la limpieza de la interfaz después de 3 segundos
         ventana.after(3000, limpiar_interfaz)

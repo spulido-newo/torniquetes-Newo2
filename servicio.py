@@ -1,17 +1,22 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import serial
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+)
 
 app = FastAPI()
 
-# Configuración de CORS
+# CORS Configuration
 origins = [
-    "http://localhost.tiangolo.com",
-    "https://localhost.tiangolo.com",
     "http://localhost",
-    "http://localhost:8080",
-    "http://localhost:3000",
-    "*",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "*"
 ]
 
 app.add_middleware(
@@ -22,35 +27,57 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configura el puerto serial para comunicarte con el módulo de relé
-ser = serial.Serial('COM3', 9600)  # Ajusta el puerto y la velocidad de baudios según tu configuración
-
-def encender_pin(pin: int):
-    ser.write(f'ENCENDER {pin}\n'.encode())  # Enviar el comando para encender el pin
-    return {"pin": pin, "estado": "encendido"}
-
-def apagar_pin(pin: int):
-    ser.write(f'APAGAR {pin}\n'.encode())  # Enviar el comando para apagar el pin
-    return {"pin": pin, "estado": "apagado"}
-
-def obtener_estado_pin(pin: int):
-    ser.write(f'CONSULTAR {pin}\n'.encode())  # Enviar el comando para consultar el estado del pin
-    estado = ser.readline().decode().strip()  # Leer la respuesta del módulo
-    return {"pin": pin, "estado": estado}
+# Serial port configuration
+try:
+    ser = serial.Serial('COM3', 9600)  # Adjust COM port and baud rate as needed
+    logging.info(f"Serial port {ser.port} opened successfully")
+except serial.SerialException as e:
+    logging.error(f"Error opening serial port: {e}")
+    ser = None
 
 @app.get("/encender/{pin}")
 def encender(pin: int):
-    return encender_pin(pin)
+    try:
+        if ser:
+            ser.write(f'ENCENDER {pin}\n'.encode())
+            logging.info(f"Pin {pin} turned on")
+            return {"pin": pin, "estado": "encendido"}
+        else:
+            logging.error("Serial port not available")
+            return {"error": "Serial port not available"}
+    except Exception as e:
+        logging.error(f"Error turning on pin {pin}: {e}")
+        return {"error": str(e)}
 
 @app.get("/apagar/{pin}")
 def apagar(pin: int):
-    return apagar_pin(pin)
+    try:
+        if ser:
+            ser.write(f'APAGAR {pin}\n'.encode())
+            logging.info(f"Pin {pin} turned off")
+            return {"pin": pin, "estado": "apagado"}
+        else:
+            logging.error("Serial port not available")
+            return {"error": "Serial port not available"}
+    except Exception as e:
+        logging.error(f"Error turning off pin {pin}: {e}")
+        return {"error": str(e)}
 
 @app.get("/consultar/{pin}")
 def consultar(pin: int):
-    return obtener_estado_pin(pin)
+    try:
+        if ser:
+            ser.write(f'CONSULTAR {pin}\n'.encode())
+            estado = ser.readline().decode().strip()
+            logging.info(f"Pin {pin} status: {estado}")
+            return {"pin": pin, "estado": estado}
+        else:
+            logging.error("Serial port not available")
+            return {"error": "Serial port not available"}
+    except Exception as e:
+        logging.error(f"Error checking pin {pin} status: {e}")
+        return {"error": str(e)}
 
 if __name__ == '__main__':
     import uvicorn
     uvicorn.run(app, host='127.0.0.1', port=4000)
-## para ejecutar uvicorn servicio:app --reload --host 127.0.0.1 --port 4000     
