@@ -25,7 +25,7 @@ SEDE = "Del Este"
 API_URL = "http://127.0.0.1:4000"  # URL base de la API de manejo del relay
 TORNIQUETE = "1"
 FUNCION = "Entrada"
-ID_SEDE_SISTEMA = "e74bb372-cd8e-4344-a0f7-a93c743ceaae"
+ID_SEDE_SISTEMA = "1840d65-0173-4992-af32-32aa5d730e28"
 # TORNIQUETE = "Salida1"
 
 # La clave de encriptación debe coincidir con la utilizada para encriptar el código QR
@@ -78,6 +78,8 @@ async def procesar_codigo_qr(codigo):
         id_sede = partes[3].strip()
         id_invitacion = partes[4].strip()
         timestamp_milisegundos2 = int(partes[5].strip())
+        id_invitadoExpress = partes[6].strip()
+
 
         logging.debug(f"Tipo: {tipo}, ID Miembro: {id_miembro}, ID Sede: {id_sede}")
 
@@ -125,10 +127,10 @@ async def procesar_codigo_qr(codigo):
             await transaction_queue.put(("transaccion4", id_miembro, id_sede, id_invitacion))
         elif tipo == "5":
             logging.debug("Agregando transacción tipo 5 a la cola")
-            await transaction_queue.put(("transaccion5", id_miembro, id_sede, id_invitacion))
+            await transaction_queue.put(("transaccion5", id_miembro, id_sede, id_invitadoExpress))
         elif tipo == "6":
             logging.debug("Agregando transacción tipo 6 a la cola")
-            await transaction_queue.put(("transaccion6", id_miembro, id_sede, id_invitacion))
+            await transaction_queue.put(("transaccion6", id_miembro, id_sede, id_invitadoExpress))
         elif tipo in ["2", "4", "6"]:
             logging.debug(f"Procesando transacción tipo {tipo}")
             ventana.after(0, lambda: lbl_mensaje.config(text="Regresa pronto...", fg="green", font=("Arial", 38)))
@@ -265,27 +267,21 @@ async def realizar_transaccion4(id_miembro, id_sede, id_invitacion):
 async def realizar_transaccion5(id_miembro, id_sede, id_invitacion):
     logging.debug(f"Iniciando transacción 5 para miembro {id_miembro} en sede {id_sede} con invitación {id_invitacion}")
     try:
-        id_transaccion = str(uuid.uuid4())
+        print("Entro Aca 1")
         hora_entrada = datetime.now()
         hora_entrada_texto = hora_entrada.strftime('%Y-%m-%dT%H:%M:%S')
         datos = {
-            "id_miembro": id_miembro,
-            "id_invitacionExpres": id_invitacion,
-            "horaEntrada": hora_entrada_texto,
-            "horaSalida": "",
-            "fecha_ingreso": "",
-            "nombre_completo": "",
-            "correo": "",
-            "sede": SEDE,            
-            "id": id_transaccion,
-            "id_sede": id_sede,
-            "id_invitacion_expres": id_invitacion
+            "id_ingresoInvitacionExpress": id_invitacion,
+            "hora_entrada": hora_entrada_texto,
+            "hora_salida": "",
+            "salio": False
         }
         logging.debug(f"Datos de la transacción 5: {datos}")
+        print(f"Datos de la transacción 5: {datos}")
         async with aiohttp.ClientSession() as session:
             logging.debug("Enviando solicitud POST para transacción 3")
-            async with session.post(
-                'https://newo2-api-managment.azure-api.net/cypher/createIngresoInvitadoExpress/',
+            async with session.put(
+                'https://newo2-api-managment.azure-api.net/cypher/updateIngresoInvitacionExpressTorniquete/',
                 headers={'accept': 'application/json', 'Content-Type': 'application/json'},
                 json=datos
             ) as response:
@@ -303,6 +299,26 @@ async def realizar_transaccion5(id_miembro, id_sede, id_invitacion):
 async def realizar_transaccion6(id_miembro, id_sede, id_invitacion):
     logging.debug(f"Iniciando transacción 6 para miembro {id_miembro} en sede {id_sede} con la invitacion {id_invitacion}")
     ventana.after(0, lambda: lbl_mensaje.config(text="Regresa pronto...", fg="green", font=("Arial", 38)))
+    try:
+        hora_entrada = datetime.now()
+        hora_salida_texto = hora_entrada.strftime('%Y-%m-%dT%H:%M:%S')
+        datos = {
+            "id_ingresoInvitacionExpress": id_invitacion,
+            "hora_salida": hora_salida_texto,
+            "salio": True
+        }
+        logging.debug(f"Datos de la transacción 5: {datos}")
+        async with aiohttp.ClientSession() as session:
+            logging.debug("Enviando solicitud POST para transacción 3")
+            async with session.put(
+                'https://newo2-api-managment.azure-api.net/cypher/updateIngresoInvitacionExpressTorniquete/',
+                headers={'accept': 'application/json', 'Content-Type': 'application/json'},
+                json=datos
+            ) as response:
+                if response.status == 200:
+                    logging.info("Transacción 5 realizada con éxito")
+    except Exception as e:
+        logging.error(f"Error al realizar la transacción 5: {e}")
 
 # Función para procesar la cola de transacciones
 async def procesar_cola_transacciones():
