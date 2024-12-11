@@ -316,7 +316,7 @@ async def realizar_transaccion6(id_miembro, id_sede, id_invitacion):
                 json=datos
             ) as response:
                 if response.status == 200:
-                    logging.info("Transacción 5 realizada con éxito")
+                    logging.info("Transacción 6 realizada con éxito")
     except Exception as e:
         logging.error(f"Error al realizar la transacción 5: {e}")
 
