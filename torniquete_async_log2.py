@@ -20,7 +20,7 @@ logging.basicConfig(
 )
 
 # Configuraciones
-PIN = 3
+PIN = 7
 SEDE = "Del Este"
 API_URL = "http://127.0.0.1:4000"  # URL base de la API de manejo del relay
 TORNIQUETE = "1"
@@ -197,6 +197,29 @@ async def realizar_transaccion1(id_miembro, id_sede):
 async def realizar_transaccion2(id_miembro, id_sede):
     logging.debug(f"Iniciando transacción 2 para miembro {id_miembro} en sede {id_sede}")
     ventana.after(0, lambda: lbl_mensaje.config(text="Regresa pronto...", fg="green", font=("Arial", 38)))
+    try:
+        id_transaccion = str(uuid.uuid4())
+        hora_salida = datetime.now()
+        hora_salida_texto = hora_salida.strftime('%Y-%m-%dT%H:%M:%S')
+        datos = {
+            "id_miembro": id_miembro,
+            "hora_salida": hora_salida_texto,
+            "salio": False
+        }
+        logging.debug(f"Datos de la transacción 2: {datos}")
+        async with aiohttp.ClientSession() as session:
+            logging.debug("Enviando solicitud POST para transacción 2")
+            async with session.put(
+                'https://newo2-api-managment.azure-api.net/cypher/updateIngresoMiembroTorniquete/',
+                headers={'accept': 'application/json', 'Content-Type': 'application/json'},
+                json=datos
+            ) as response:
+                if response.status == 200:
+                    logging.info("Transacción 2 realizada con éxito")
+                else:
+                    logging.error(f"Error en la transacción 2: {response.status} - {await response.text()}")
+    except Exception as e:
+        logging.error(f"Error al realizar la transacción 2: {e}")
 
 # Ingreso Invitado
 # ======================
