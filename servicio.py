@@ -81,15 +81,20 @@ def consultar(pin: int):
             estado = GPIO.input(pin)
             estado_str = "alto" if estado == GPIO.HIGH else "bajo"
             logging.info(f"Pin {pin} status: {estado_str}")
+            print(f"Pin {pin} status: {estado_str}")
+
             return {"pin": pin, "estado": estado_str}
         elif pin == OUTPUT_PIN:
             estado = GPIO.input(pin)
             estado_str = "encendido" if estado == GPIO.HIGH else "apagado"
+            print(f"Pin {pin} status: {estado_str}")
             logging.info(f"Pin {pin} status: {estado_str}")
             return {"pin": pin, "estado": estado_str}
         elif pin == 7:  # A�adido para consultar pin 7
             estado = GPIO.input(pin)
             estado_str = "alto" if estado == GPIO.HIGH else "bajo"
+            print(f"Pin {pin} status: {estado_str}")
+
             logging.info(f"Pin {pin} status: {estado_str}")
             return {"pin": pin, "estado": estado_str}
         else:

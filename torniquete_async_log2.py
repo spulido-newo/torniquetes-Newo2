@@ -80,6 +80,29 @@ async def procesar_codigo_qr(codigo):
         timestamp_milisegundos2 = int(partes[5].strip())
         id_invitadoExpress = partes[6].strip()
 
+        if tipo in ["2", "4", "6"]:
+            PIN = 11
+        elif tipo in ["1", "3", "5"]:
+            PIN = 7
+        # Funciones para encender y apagar el pin
+        async def encender_pin():
+            logging.debug("Intentando encender el pin")
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"{API_URL}/encender/{PIN}") as response:
+                    if response.status == 200:
+                        logging.info(f"Pin {PIN} encendido")
+                    else:
+                        logging.error(f"Error al encender el pin: {response.status}")
+
+        async def apagar_pin():
+            logging.debug("Intentando apagar el pin")
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"{API_URL}/apagar/{PIN}") as response:
+                    if response.status == 200:
+                        logging.info(f"Pin {PIN} apagado")
+                    else:
+                        logging.error(f"Error al apagar el pin: {response.status}")
+
 
         logging.debug(f"Tipo: {tipo}, ID Miembro: {id_miembro}, ID Sede: {id_sede}")
 
