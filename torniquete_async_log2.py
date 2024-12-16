@@ -35,24 +35,6 @@ cipher_suite = Fernet(key)
 # Cola para las transacciones
 transaction_queue = asyncio.Queue()
 
-# Funciones para encender y apagar el pin
-async def encender_pin():
-    logging.debug("Intentando encender el pin")
-    async with aiohttp.ClientSession() as session:
-        async with session.get(f"{API_URL}/encender/{PIN}") as response:
-            if response.status == 200:
-                logging.info(f"Pin {PIN} encendido")
-            else:
-                logging.error(f"Error al encender el pin: {response.status}")
-
-async def apagar_pin():
-    logging.debug("Intentando apagar el pin")
-    async with aiohttp.ClientSession() as session:
-        async with session.get(f"{API_URL}/apagar/{PIN}") as response:
-            if response.status == 200:
-                logging.info(f"Pin {PIN} apagado")
-            else:
-                logging.error(f"Error al apagar el pin: {response.status}")
 
 async def procesar_codigo_qr(codigo):
     logging.debug(f"Iniciando procesamiento de código QR: {codigo}")
