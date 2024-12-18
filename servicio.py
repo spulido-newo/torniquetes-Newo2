@@ -2,23 +2,19 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import RPi.GPIO as GPIO
 import logging
+import uvicorn
 
-# Configure logging
+# Configuraci�n del logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
+# Inicializaci�n de la aplicaci�n FastAPI
 app = FastAPI()
 
-# CORS Configuration
-origins = [
-    "http://localhost",
-    "http://localhost:4000",
-    "http://127.0.0.1:4000",
-    "*"
-]
-
+# Configuraci�n de CORS
+origins = ["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -27,88 +23,72 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# GPIO setup
-INPUT_PIN = 7
-OUTPUT_PIN = 11
+# Configuraci�n de GPIO
+GPIO.setmode(GPIO.BCM)
 
-GPIO.setmode(GPIO.BCM)  # Use BCM pin numbering
-GPIO.setup(INPUT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # Pin 7 as input
-GPIO.setup(OUTPUT_PIN, GPIO.OUT)  # Pin 11 as output
+# Pines GPIO
+PIN_4 = 4   # GPIO 4 (Posici�n 7 en el header)
+PIN_17 = 17 # GPIO 17 (para referencia)
 
+# Configuraci�n de los pines
+GPIO.setup(PIN_4, GPIO.OUT)   # Configura GPIO 4 como salida
+GPIO.setup(PIN_17, GPIO.OUT)  # Configura GPIO 17 como salida
+
+# Endpoint para encender un pin de salida
 @app.get("/encender/{pin}")
 def encender(pin: int):
-    print(f"Pin que esta ingresando de torniquete: {pin}")
     try:
-        if pin == OUTPUT_PIN:
+        if pin in [PIN_4, PIN_17]:  # Verificamos si es un pin permitido
             GPIO.output(pin, GPIO.HIGH)
-            logging.info(f"Pin {pin} turned on")
-            return {"pin": pin, "estado": "encendido"}
-        elif pin == 7:  # Cambiado de INPUT_PIN a 7
-            GPIO.setup(pin, GPIO.OUT)  # Configura el pin como salida
-            GPIO.output(pin, GPIO.HIGH)
-            logging.info(f"Pin {pin} turned on")
+            logging.info(f"Pin {pin} encendido")
             return {"pin": pin, "estado": "encendido"}
         else:
-            logging.error(f"Pin {pin} is not configured as output")
-            return {"error": "Invalid pin for output"}
+            return {"error": f"El pin {pin} no est� configurado como salida"}
     except Exception as e:
-        logging.error(f"Error turning on pin {pin}: {e}")
+        logging.error(f"Error al encender el pin {pin}: {e}")
         return {"error": str(e)}
 
+
+# Endpoint para apagar un pin de salida
 @app.get("/apagar/{pin}")
 def apagar(pin: int):
     try:
-        if pin == OUTPUT_PIN:
+        if pin in [PIN_4, PIN_17]:  # Verificamos si es un pin permitido
             GPIO.output(pin, GPIO.LOW)
-            logging.info(f"Pin {pin} turned off")
-            return {"pin": pin, "estado": "apagado"}
-        elif pin == 7:  # Cambiado de INPUT_PIN a 7
-            GPIO.setup(pin, GPIO.OUT)  # Configura el pin como salida
-            GPIO.output(pin, GPIO.LOW)
-            logging.info(f"Pin {pin} turned off")
+            logging.info(f"Pin {pin} apagado")
             return {"pin": pin, "estado": "apagado"}
         else:
-            logging.error(f"Pin {pin} is not configured as output")
-            return {"error": "Invalid pin for output"}
+            return {"error": f"El pin {pin} no est� configurado como salida"}
     except Exception as e:
-        logging.error(f"Error turning off pin {pin}: {e}")
+        logging.error(f"Error al apagar el pin {pin}: {e}")
         return {"error": str(e)}
 
+
+# Endpoint para consultar el estado de un pin
 @app.get("/consultar/{pin}")
 def consultar(pin: int):
     try:
-        if pin == INPUT_PIN:
+        if pin in [PIN_4, PIN_17]:
             estado = GPIO.input(pin)
             estado_str = "alto" if estado == GPIO.HIGH else "bajo"
-            logging.info(f"Pin {pin} status: {estado_str}")
-            print(f"Pin {pin} status: {estado_str}")
-
-            return {"pin": pin, "estado": estado_str}
-        elif pin == OUTPUT_PIN:
-            estado = GPIO.input(pin)
-            estado_str = "encendido" if estado == GPIO.HIGH else "apagado"
-            print(f"Pin {pin} status: {estado_str}")
-            logging.info(f"Pin {pin} status: {estado_str}")
-            return {"pin": pin, "estado": estado_str}
-        elif pin == 7:  # A�adido para consultar pin 7
-            estado = GPIO.input(pin)
-            estado_str = "alto" if estado == GPIO.HIGH else "bajo"
-            print(f"Pin {pin} status: {estado_str}")
-
-            logging.info(f"Pin {pin} status: {estado_str}")
+            logging.info(f"El pin {pin} est� {estado_str}")
             return {"pin": pin, "estado": estado_str}
         else:
-            logging.error(f"Pin {pin} is not configured")
-            return {"error": "Invalid pin"}
+            return {"error": f"El pin {pin} no est� configurado"}
     except Exception as e:
-        logging.error(f"Error checking pin {pin} status: {e}")
+        logging.error(f"Error al consultar el pin {pin}: {e}")
         return {"error": str(e)}
 
+# Limpiar configuraci�n de GPIO al cerrar la aplicaci�n
 @app.on_event("shutdown")
 def cleanup_gpio():
-    logging.info("Cleaning up GPIO settings")
+    logging.info("Limpiando configuraci�n GPIO")
     GPIO.cleanup()
 
+# Ejecutar la aplicaci�n FastAPI
 if __name__ == '__main__':
-    import uvicorn
-    uvicorn.run(app, host='127.0.0.1', port=4000)
+    try:
+        uvicorn.run(app, host='0.0.0.0', port=4000)
+    except KeyboardInterrupt:
+        logging.info("Aplicaci�n detenida manualmente")
+        GPIO.cleanup()

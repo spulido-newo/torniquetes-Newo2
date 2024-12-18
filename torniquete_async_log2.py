@@ -20,7 +20,7 @@ logging.basicConfig(
 )
 
 # Configuraciones
-PIN = 7
+PIN = 4
 SEDE = "Del Este"
 API_URL = "http://127.0.0.1:4000"  # URL base de la API de manejo del relay
 TORNIQUETE = "1"
@@ -63,9 +63,9 @@ async def procesar_codigo_qr(codigo):
         id_invitadoExpress = partes[6].strip()
 
         if tipo in ["2", "4", "6"]:
-            PIN = 11
+            PIN = 17
         elif tipo in ["1", "3", "5"]:
-            PIN = 7
+           PIN = 4
         # Funciones para encender y apagar el pin
         async def encender_pin():
             logging.debug("Intentando encender el pin")
