@@ -23,7 +23,7 @@ logging.basicConfig(
 # Configuraciones
 PIN = 4
 SEDE = "Del Este"
-API_URL = "http://127.0.0.1:4000"  # URL base de la API de manejo del relay
+API_URL = "http://127.0.0.1:8000"  # URL base de la API de manejo del relay
 TORNIQUETE = "1"
 FUNCION = "Entrada"
 ID_SEDE_SISTEMA = "1840d65-0173-4992-af32-32aa5d730e28"
@@ -158,7 +158,7 @@ async def procesar_codigo_qr(codigo):
 
     except Exception as e:
         logging.error(f"Error inesperado: {e}")
-        ventana.after(0, lambda: lbl_mensaje.config(text="X", fg="red", font=("Arial", 200)))
+        ventana.after(0, lambda: lbl_mensaje.config(text="QR no valido en este lector", fg="red", font=("Arial", 18)))
         await apagar_pin()
         ventana.after(3000, limpiar_interfaz)
         return "error"

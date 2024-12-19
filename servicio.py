@@ -88,7 +88,7 @@ def cleanup_gpio():
 # Ejecutar la aplicaci�n FastAPI
 if __name__ == '__main__':
     try:
-        uvicorn.run(app, host='0.0.0.0', port=4000)
+        uvicorn.run(app, host='0.0.0.0', port=8000)
     except KeyboardInterrupt:
         logging.info("Aplicaci�n detenida manualmente")
         GPIO.cleanup()
