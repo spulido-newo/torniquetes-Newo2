@@ -3,6 +3,7 @@ import aiohttp
 import uuid
 from datetime import datetime, timedelta
 import time
+import pyudev
 import tkinter as tk
 from cryptography.fernet import Fernet
 from PIL import Image, ImageTk
@@ -26,7 +27,6 @@ API_URL = "http://127.0.0.1:4000"  # URL base de la API de manejo del relay
 TORNIQUETE = "1"
 FUNCION = "Entrada"
 ID_SEDE_SISTEMA = "1840d65-0173-4992-af32-32aa5d730e28"
-# TORNIQUETE = "Salida1"
 
 # La clave de encriptación debe coincidir con la utilizada para encriptar el código QR
 key = b'P_A-IQAqlKVctADGBFmFD_5C7yVk0EJNNBt--RqSOI0='
@@ -36,7 +36,9 @@ cipher_suite = Fernet(key)
 transaction_queue = asyncio.Queue()
 
 
+
 async def procesar_codigo_qr(codigo):
+    print(f"Codigo: {codigo}")
     logging.debug(f"Iniciando procesamiento de código QR: {codigo}")
     try:
         # Desencriptar el código QR
@@ -62,10 +64,13 @@ async def procesar_codigo_qr(codigo):
         timestamp_milisegundos2 = int(partes[5].strip())
         id_invitadoExpress = partes[6].strip()
 
-        if tipo in ["2", "4", "6"]:
-            PIN = 17
-        elif tipo in ["1", "3", "5"]:
-           PIN = 4
+        if FUNCION == "Entrada":
+            if tipo in ["1", "3", "5"]:
+                PIN = 4
+        if FUNCION == "Salida":
+            if tipo in ["2", "4", "6"]:
+                PIN = 17
+            
         # Funciones para encender y apagar el pin
         async def encender_pin():
             logging.debug("Intentando encender el pin")
@@ -118,22 +123,22 @@ async def procesar_codigo_qr(codigo):
         await apagar_pin()
 
         # Agregar la transacción a la cola
-        if tipo == "1":
+        if tipo == "1" and FUNCION == "Entrada":
             logging.debug("Agregando transacción tipo 1 a la cola")
             await transaction_queue.put(("transaccion1", id_miembro, id_sede))
-        elif tipo == "2":
+        elif tipo == "2" and FUNCION == "Salida":
             logging.debug("Agregando transacción tipo 2 a la cola")
             await transaction_queue.put(("transaccion2", id_miembro, id_sede))
-        elif tipo == "3":
+        elif tipo == "3" and FUNCION == "Entrada":
             logging.debug("Agregando transacción tipo 3 a la cola")
             await transaction_queue.put(("transaccion3", id_miembro, id_sede, id_invitacion))
-        elif tipo == "4":
+        elif tipo == "4" and FUNCION == "Salida":
             logging.debug("Agregando transacción tipo 4 a la cola")
             await transaction_queue.put(("transaccion4", id_miembro, id_sede, id_invitacion))
-        elif tipo == "5":
+        elif tipo == "5" and FUNCION == "Entrada":
             logging.debug("Agregando transacción tipo 5 a la cola")
             await transaction_queue.put(("transaccion5", id_miembro, id_sede, id_invitadoExpress))
-        elif tipo == "6":
+        elif tipo == "6" and FUNCION == "Salida":
             logging.debug("Agregando transacción tipo 6 a la cola")
             await transaction_queue.put(("transaccion6", id_miembro, id_sede, id_invitadoExpress))
         elif tipo in ["2", "4", "6"]:
@@ -356,17 +361,17 @@ async def procesar_cola_transacciones():
             logging.debug("Esperando nueva transacción en la cola")
             transaccion = await transaction_queue.get()
             logging.debug(f"Nueva transacción recibida: {transaccion}")
-            if transaccion[0] == "transaccion1":
+            if transaccion[0] == "transaccion1" and FUNCION == "Entrada":
                 await realizar_transaccion1(transaccion[1], transaccion[2])
-            elif transaccion[0] == "transaccion2":
+            elif transaccion[0] == "transaccion2" and FUNCION == "Salida":
                 await realizar_transaccion2(transaccion[1], transaccion[2])
-            elif transaccion[0] == "transaccion3":
+            elif transaccion[0] == "transaccion3" and FUNCION == "Entrada":
                 await realizar_transaccion3(transaccion[1], transaccion[2], transaccion[3])
-            elif transaccion[0] == "transaccion4":
+            elif transaccion[0] == "transaccion4" and FUNCION == "Salida":
                 await realizar_transaccion4(transaccion[1], transaccion[2], transaccion[3])
-            elif transaccion[0] == "transaccion5":
+            elif transaccion[0] == "transaccion5" and FUNCION == "Entrada":
                 await realizar_transaccion5(transaccion[1], transaccion[2], transaccion[3])
-            elif transaccion[0] == "transaccion6":
+            elif transaccion[0] == "transaccion6" and FUNCION == "Salida":
                 await realizar_transaccion6(transaccion[1], transaccion[2], transaccion[3])
             transaction_queue.task_done()
             logging.debug("Transacción procesada y completada")
